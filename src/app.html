@@ -3,6 +3,12 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<!-- https://github.com/highlightjs/highlight.js/tree/main/src/styles/base16 -->
+		<!-- Don't know why, but any styles that don't come from base16 are messed up,
+		     so I just load the style I want after base16/twilight.css to fix the issue. -->
+		<link rel="stylesheet" href="/twilight.css">
+		<link rel="stylesheet" href="/tokyo-night-dark.css">
+		<!-- <link rel="stylesheet" href="/night-owl.css"> -->
 		<meta name="viewport" content="width=device-width" />
 		%sveltekit.head%
 	</head>
