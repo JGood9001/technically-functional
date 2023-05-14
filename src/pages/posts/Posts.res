@@ -15,6 +15,7 @@ type props = {
   posts: array<string>
 }
 
+
 let default = (props: props) =>
     <div>
       <Link href="/posts/1"> {React.string("Post 1")} </Link>
