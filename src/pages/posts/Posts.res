@@ -15,15 +15,12 @@ type props = {
   posts: array<string>
 }
 
-let default = (props: props) => {
-  (
+let default = (props: props) =>
     <div>
       <Link href="/posts/1"> {React.string("Post 1")} </Link>
       <Link href="/posts/2"> {React.string("Post 2")} </Link>
       <div>{React.string(Js.Json.stringifyAny(props.posts)->Belt.Option.getUnsafe)}</div>
     </div>
-  )
-}
 
 // path.join -> https://github.com/TheSpyder/rescript-nodejs/blob/main/src/Path.res#L24
 // type processt 
