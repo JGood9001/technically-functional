@@ -11,16 +11,23 @@ type gray_matter_content = { "content": string, "data": gray_matter_data }
 
 @module("fs") external readFileSync: string => string => string = "readFileSync"
 
+type post_details = { "path": string, "title": string }
 type props = {
-  posts: array<string>
+  posts: array<post_details>
 }
 
 
 let default = (props: props) =>
     <div>
-      <Link href="/posts/1"> {React.string("Post 1")} </Link>
-      <Link href="/posts/2"> {React.string("Post 2")} </Link>
-      <div>{React.string(Js.Json.stringifyAny(props.posts)->Belt.Option.getUnsafe)}</div>
+    // [{"path":"/posts/mdx-page","title":"MDX Page"}]
+      {
+        props.posts->Belt.Array.mapWithIndex((i, post) => (
+          <Link key={Belt.Int.toString(i)} href={post["path"]}>{React.string(post["title"])}</Link>
+        ))->React.array
+      }
+      // <Link href="/posts/1"> {React.string("Post 1")} </Link>
+      // <Link href="/posts/2"> {React.string("Post 2")} </Link>
+      // <div>{React.string(Js.Json.stringifyAny(props.posts)->Belt.Option.getUnsafe)}</div>
     </div>
 
 // path.join -> https://github.com/TheSpyder/rescript-nodejs/blob/main/src/Path.res#L24
@@ -37,7 +44,7 @@ type filename_and_matter = { filename: string, matter: gray_matter_content }
 // of using bs.js.
 // https://github.com/JGood9001/rescript-repl/blob/main/src/repl-logic/REPLLogic.res#L34
 let getStaticProps = (_ctx) => {
-  let posts_directory = NodeJs.Path.join([NodeJs.Process.cwd(NodeJs.Process.process), "pages/posts"])
+  let posts_directory = NodeJs.Path.join([NodeJs.Process.cwd(NodeJs.Process.process), "/posts"]) // "pages/posts"])
   let filenames = Js.Array.filter(x => Js.String.split(".", x)[1] !== "js", NodeJs.Fs.readdirSync(posts_directory)) // => [ 'index.js', 'my-mdx-page.mdx' ]
 
   let files = Js.Promise.all(filenames->Belt.Array.map(filename => {

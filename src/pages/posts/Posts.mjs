@@ -10,17 +10,17 @@ import * as Caml_array from "rescript/lib/es6/caml_array.js";
 import GrayMatter from "gray-matter";
 
 function $$default(props) {
-  return React.createElement("div", undefined, React.createElement(Link, {
-                  href: "/posts/1",
-                  children: "Post 1"
-                }), React.createElement(Link, {
-                  href: "/posts/2",
-                  children: "Post 2"
-                }), React.createElement("div", undefined, JSON.stringify(props.posts)));
+  return React.createElement("div", undefined, Belt_Array.mapWithIndex(props.posts, (function (i, post) {
+                    return React.createElement(Link, {
+                                href: post.path,
+                                children: post.title,
+                                key: String(i)
+                              });
+                  })));
 }
 
 function getStaticProps(_ctx) {
-  var posts_directory = Path.join(Process.cwd(), "pages/posts");
+  var posts_directory = Path.join(Process.cwd(), "/posts");
   var filenames = Fs.readdirSync(posts_directory).filter(function (x) {
         return Caml_array.get(x.split("."), 1) !== "js";
       });

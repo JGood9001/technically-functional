@@ -5,23 +5,23 @@ const fs = require("fs");
 // And removing it fixes that + the prod build works fine.
 // const transpileModules = ["rescript"].concat(bsconfig["bs-dependencies"]);
 const transpileModules = []
-const withTM = require("next-transpile-modules")(transpileModules);
+// const withTM = require("next-transpile-modules")(transpileModules);
 
 // https://nextjs.org/blog/markdown
 // syntax highlighting:
 // https://v0.mdxjs.com/guides/syntax-highlighting
-const withMDX = require('@next/mdx')({
-  extension: /\.mdx?$/,
-  options: {
-    // If you use remark-gfm, you'll need to use next.config.mjs
-    // as the package is ESM only
-    // https://github.com/remarkjs/remark-gfm#install
-    remarkPlugins: [require("remark-prism")],
-    rehypePlugins: [],
-    // If you use `MDXProvider`, uncomment the following line.
-    // providerImportSource: "@mdx-js/react",
-  },
-});
+// const withMDX = require('@next/mdx')({
+//   extension: /\.mdx?$/,
+//   options: {
+//     // If you use remark-gfm, you'll need to use next.config.mjs
+//     // as the package is ESM only
+//     // https://github.com/remarkjs/remark-gfm#install
+//     remarkPlugins: [require("remark-prism")],
+//     rehypePlugins: [],
+//     // If you use `MDXProvider`, uncomment the following line.
+//     // providerImportSource: "@mdx-js/react",
+//   },
+// });
 
 const isWebpack5 = true;
 const config = {
@@ -70,5 +70,7 @@ const config = {
   // }
 };
 
-// module.exports = withTM(config);
-module.exports = withMDX(config);
+// module.exports = withMDX(config);
+
+// withMDX no longer required after switching to use next-mdx-remote to support retrieving the Frontmatter so it can be formatted in HTML
+module.exports = config

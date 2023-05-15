@@ -54,23 +54,7 @@ let default = (props: props): React.element => {
     // TODO:
     // wrap classname prose around mdx components only
     // https://tailwindcss.com/docs/typography-plugin
-  | _ =>  <MainLayout>
-            // LLO Not really sure how to fix this, keep getting a hydration warning error
-            // anytime the components are rendered via MDXProvider
-            // This issue never came up in this guide: https://v0.mdxjs.com/guides/syntax-highlighting
-            // And this error is a React specific thing, rather than it being the fault of rescript
-            // <MDX.MDXProvider components={components}>
-            // This worked with no issues:
-            // https://dev.to/mikeesto/next-js-mdx-w-code-highlighting-16fi
-            // more themes to pick from -> https://github.com/PrismJS/prism-themes
-            // href="https://unpkg.com/dracula-prism/dist/css/dracula-prism.css"
-            // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-night-owl.min.css"
-            // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-synthwave84.min.css"
-            // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-holi-theme.min.css"
-            // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-z-touch.min.css"
-              <article className="prose lg:prose-xl"> content </article>
-            // </MDX.MDXProvider>
-          </MainLayout>
+  | _ =>  <MainLayout> content </MainLayout>
   }
 }
 
