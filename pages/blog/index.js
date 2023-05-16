@@ -1,7 +1,7 @@
-import PostsRes from "src/pages/posts/Posts.mjs";
+import BlogRes from "src/pages/blog/Blog.mjs";
 
 // This can be re-exported as is (no Fast-Refresh issues)
-export { getStaticProps } from "src/pages/posts/Posts.mjs";
+export { getStaticProps } from "src/pages/blog/Blog.mjs";
 
 // Note:
 // We need to wrap the make call with
@@ -10,6 +10,6 @@ export { getStaticProps } from "src/pages/posts/Posts.mjs";
 //
 // If you don't do this, your Fast-Refresh will
 // not work!
-export default function Posts(props) {
-  return <PostsRes {...props}/>;
+export default function Blog(props) {
+  return <BlogRes {...props}/>;
 }

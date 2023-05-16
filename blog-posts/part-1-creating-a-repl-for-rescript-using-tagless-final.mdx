@@ -2,12 +2,15 @@
 title: "Part 1: Creating a REPL for Rescript using Tagless Final"
 slug: "part-1-creating-a-repl-for-rescript-using-tagless-final"
 description: "Creating a REPL for Rescript using Tagless Final"
-date: "May 14, 2023"
+date: "May 15, 2023"
 ---
 
 The goal of this series of blog posts is to explore a small problem where Tagless Final can be applied. There's some initial code I wrote while hacking together a quick REPL for ReScript that I wanted to use, and in preparation for actually creating a proper library that could potentially be reused amongst the ReScript community, I figured a proper refactor is necessary.
 
+This series of posts consists largely of code that I was copying here as I was implementing the REPL; and intended to be an overview, rather than being in depth.
+
 If you're unfamiliar with Tagless Final, here's the [blog post](https://oleksandrmanzyuk.wordpress.com/2014/06/18/from-object-algebras-to-finally-tagless-interpreters-2/) I read that introduced me to the approach; and a link to a [ReScript Playground snippet](https://rescript-lang.org/try?version=v10.1.2&code=PTAEEEBtNAzAnA9gW1AFwBYFNQGcsDGaAlogHYD6siArvAHTIyzGQ7FnoCGA5m7riocukAFAhQAdy644iaIkkceoEeRVLM6DMVkAjSIhUAHRLjQAucWAxo0x3BZDysAa1xcyAE3jJPALwBPGld6SUR4L2N4LAF6AhRgACYABgBGABZgFIA2YDSADmAEFABaRD0AK0I0UpEeLD14GVK0RFKWMhFIQNbeflxSjjQseGisEfhBpOBRZEQvGjZ0QOMcAFEAD2MoFQBeUABvUVAASDRVnDRQUVO2a8hia4tQYdA9gD50E7P71S8vKAXtdPuh3l80KIAL6iUQXNagLAANxE71A6xRkAAFMMAJSwiQYGSuLDQKS0SBeADkSJwXBobQaZFGXBGgMwOAadlGcng2l0KzWVNkkmaxjWgMxNCwoj+yNRByxGJEWLIuNx4NAZFh80Wy2VkC2xjRx1AgquaPlYjNf0eIK1moNqvxNom-0Bis2ABpQIENaCnVasZsNQBqRGYrF+-Ew6ygAAq2ER2xiAlInCxaVA4axSWzoAAzOrXrIYuN8GQ2apZNQFJJZFjYFwCKwnqysIC9IE4MQptcCJAZLJdUtYrirHKs4qR8slUD0dtdlInhhzWCDlbi59but6FwAUr6HbM7ifbvj0l1TqFqO1wBZJZLg6m04cAc0LwbReQHg-H53N1kCWecQQhTVIVjGccAfQ1MSNE0TlfMh30-dE4O2P8zQA64gJgT0fT9R1IyDENQAAKgjFVo2hWE5Tzacb1nO95xgpdNFXeELQ3TEtw+W470YJYsQE480lPUARKeXMrzjSQsF7LwfXCMgqX7FBjFYHB2Noa4OVAKDQD0eSyA0MUJVeThjC4GJK2wfBcB9PQGW0Vk410FTdKTAgZHYTgAHkAGEuCYWU3SRKdESSLEDOEpYDSNK8gA) where I translated a few of the examples from that blog post into ReScript.
+When I first saw the approach, dependency injection immediately came to mind.
 
 Upon initial review of the spaghetti code that made up the prototype REPL, I identified and delineated two separate interfaces:
   1. Command Line
@@ -95,16 +98,16 @@ module CommandLineIOAlg = {
     type t = Readline.Interface.t
 
     let make = () =>
-    Readline.make(
-        Readline.interfaceOptions(~input=Process.process->Process.stdin, ~output=Process.process->Process.stdout, ()),
-    )->CommandLineIO
+        Readline.make(
+            Readline.interfaceOptions(~input=Process.process->Process.stdin, ~output=Process.process->Process.stdout, ()),
+        )->CommandLineIO
 
     let prompt = (CommandLineIO(rl), query, cb) =>
-    Promise.make((resolve, _reject) => rl->Readline.Interface.question(query, x => resolve(. x)))
-    ->Promise.then(user_input => cb(user_input))
+        Promise.make((resolve, _reject) => rl->Readline.Interface.question(query, x => resolve(. x)))
+        ->Promise.then(user_input => cb(user_input))
 
     let on = (CommandLineIO(rl), event, cb) =>
-    rl->Readline.Interface.on(Event.fromString(event), cb)->CommandLineIO
+        rl->Readline.Interface.on(Event.fromString(event), cb)->CommandLineIO
 
     let close = (CommandLineIO(rl)) => rl->Readline.Interface.close
 }

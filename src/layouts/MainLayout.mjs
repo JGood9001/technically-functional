@@ -31,8 +31,8 @@ function MainLayout$Navigation(Props) {
                           href: "/about",
                           children: "About"
                         }), React.createElement(Link, {
-                          href: "/posts",
-                          children: "Posts"
+                          href: "/blog",
+                          children: "Blog"
                         }), React.createElement("a", {
                           className: "px-3 font-bold",
                           href: "https://github.com/ryyppy/nextjs-default",

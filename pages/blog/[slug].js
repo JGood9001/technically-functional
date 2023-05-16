@@ -13,7 +13,7 @@ import remarkPrism from "remark-prism"
 // https://github.com/hashicorp/next-mdx-remote
 
 // POSTS_PATH is useful when you want to get the path to a specific file
-const POSTS_PATH = path.join(process.cwd(), 'posts')
+const POSTS_PATH = path.join(process.cwd(), 'blog-posts')
 
 // postFilePaths is the list of all mdx files inside the POSTS_PATH directory
 const postFilePaths = fs

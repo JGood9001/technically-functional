@@ -57,16 +57,3 @@ let default = (props: props): React.element => {
   | _ =>  <MainLayout> content </MainLayout>
   }
 }
-
-// import React from 'react'
-// import {MDXProvider} from '@mdx-js/tag'
-// const components = {
-//   pre: props => <div {...props} />,
-//   code: props => <pre style={{ color: 'tomato' }} {...props} />
-// }
-// export default props => (
-//   <MDXProvider components={components}>
-//     <main {...props}>
-//     </main>
-//   </MDXProvider>
-// )

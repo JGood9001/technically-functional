@@ -20,7 +20,7 @@ module Navigation = {
       <div className="flex w-2/3 justify-end">
         <Link href="/"> {React.string("Home")} </Link>
         <Link href="/about"> {React.string("About")} </Link>
-        <Link href="/posts"> {React.string("Posts")} </Link>
+        <Link href="/blog"> {React.string("Blog")} </Link>
         // Link with embedded a tag is deprecated
         // <Link href="/examples"> <a className="px-3"> {React.string("Examples")} </a> </Link>
         <a

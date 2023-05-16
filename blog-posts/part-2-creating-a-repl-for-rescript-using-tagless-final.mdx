@@ -1,0 +1,364 @@
+---
+title: "Part 2: Creating a REPL for Rescript using Tagless Final"
+slug: "part-2-creating-a-repl-for-rescript-using-tagless-final"
+description: "Implementing Parser Combinators to parse REPL Commands"
+date: "May 15, 2023"
+---
+
+We'll need two small utility functions:
+
+src/utils/Utils.res
+```res
+let id = x => x
+let pipe = (g, f, x) => x->g->f
+let compose = (f, g, x) => x->g->f
+```
+
+Next create a Functor interface, I won't cover the specifics of this implementation here, but if you're interesting in learning more, then check out this blog post which helped me learn [how these can be implemented in OCaml](http://ssomayyajula.github.io/posts/2016-04-23-category-theoretic-abstractions-in-ocaml.html).
+
+src/interfaces/Functor.res
+```res
+open Utils
+
+module type AT = {
+    type t<'a>
+}
+
+module type Functor = {
+    include AT
+    let fmap: ('a => 'b) => t<'a> => t<'b>
+}
+
+module TestFunctor = (F: Functor) => {
+    let test_id = x => F.fmap(id, x) == x
+    let test_compose = x => {
+        let f = x => mod(x, 2)
+        let g = x => x - 1
+        F.fmap(pipe(g, f))(x) == F.fmap(f, (F.fmap(g, x)))
+    }
+}
+```
+
+Next, an Applicative interface.
+
+src/interfaces/Applicative.res
+```res
+open Utils
+open Functor
+
+// equivalent:
+// f <$> x <*> y
+// f->fmap(x)->apply(y)
+module type Applicative = {
+    include Functor
+    let pure: 'a => t<'a>
+    let apply: t<('a => 'b)> => t<'a> => t<'b>
+}
+
+module TestApplicative = (A: Applicative) => {
+    let test_id = x => (A.pure(id)->A.apply(x)) == x    
+    let test_hom = (f, x) => (A.pure(f)->A.apply(A.pure(x))) == A.pure(f(x))
+    // A.t<('a => 'b)> => 'a => bool
+    let test_interchange = (u, y) => (u->A.apply(A.pure(y))) == (A.pure(f => f(y))->A.apply(u))
+    // A.t<('a => 'b)> => A.t<('c => 'a)> => A.t<'c> => bool
+    let test_composition = (u, v, w) =>
+        (A.pure(compose)->A.apply(u)->A.apply(v)->A.apply(w)) == u->A.apply(v -> A.apply(w))
+}
+```
+
+src/repl-commands/REPLCommands.res
+```res
+type moduleName = string
+type replCommand = RescriptCode | StartMultiLineMode | EndMultiLineMode | LoadModule(moduleName)
+```
+
+Then we'll use Functor and Applicative when creating our Parser type:
+
+src/repl-commands-parser/Parser
+```res
+open Functor
+open Applicative
+open REPLCommands
+
+type parseResult<'a> = option<(string, 'a)>
+type parser<'a> = Parser({ runParser: string => parseResult<'a> })
+
+module ParserFunctor : (Functor with type t<'a> = parser<'a>) = {
+    type t<'a> = parser<'a>
+    let fmap = (f, Parser(p)) => {
+        Parser({ runParser: s => {
+            // run the provided parser, then run the function over the result returned from that parser.
+            switch p.runParser(s) {
+                | Some((remainingStr, result)) => Some((remainingStr, f(result)))
+                | None => None
+            }
+        }})
+    }
+}
+
+// let Parser(apply_after_transform_p) = {
+//     ParserApplicative.apply(
+//         // expect this after the first step...
+//         // [ ', and more', ("hi", comma) => Js.String.toUpperCase("hi") ++ comma ]
+//         ParserApplicative.fmap((hi, comma) => Js.String.toUpperCase(hi) ++ comma, str("hi")),
+//         str(",")
+//     )
+// }
+// Js.log(apply_after_transform_p.runParser("hi, and more"))
+module ParserApplicative : (Applicative with type t<'a> = parser<'a>) = {
+    include ParserFunctor
+    let pure = p => Parser({ runParser: _ => None })
+    let apply = (Parser(pf): t<('a => 'b)>, Parser(p): t<'a>): t<'b> =>
+        Parser({ runParser: s => {
+            switch pf.runParser(s) {
+                | Some((remainingStr, f)) => {
+                    switch p.runParser(remainingStr) {
+                        | Some((remainingStr, result)) => Some((remainingStr, f(result)))
+                        | None => None
+                    }
+                }
+                | None => None
+            }
+        }})
+}
+
+let parseReplCommand = (Parser(p), s: string): parseResult<replCommand> =>
+    p.runParser(s)
+```
+
+Now, we can create parser combinators and combine them to match the string patterns we want to correlate to a repl command which we want to support.
+
+src/repl-commands-parser/ParserCombinators.res
+```res
+open Parser
+
+// λ> (Js.String.slice(~from=2, ~to_=5, "abcdefg") == "cde")->Js.log
+// λ> true
+
+let splitAt = (s: string, idx: int): (string, string) => {
+    let x = Js.String.slice(~from=0, ~to_=idx, s)
+    let y = Js.String.slice(~from=idx, ~to_=Js.String.length(s), s)
+    (x, y)
+}
+
+// λ> matchStr(":{", ":{and the rest of the string")->Js.log
+// λ> true
+let matchStr = (stringToMatch: string, inputStr: string) =>
+    Js.String.slice(~from=0, ~to_=Js.String.length(stringToMatch), inputStr) == stringToMatch
+
+// There's also string to char
+// String.make(1, 'a') => "a"
+// λ> charToString('a')->Js.log
+// λ> a
+let charToString = (c: char): string => String.make(1, c)
+
+let char = (c: char): parser<string> =>
+    Parser({ runParser: s => {
+        let (x, remainingStr) = splitAt(s, 1)
+        (x == charToString(c)) ? Some((remainingStr, x)) : None
+    }})
+
+// let pattern = "run"
+// let s = "running"
+// λ> Js.String.slice(~from=0, ~to_=Js.String.length(pattern), s)->Js.log
+// λ> run
+// Js.String.slice(~from=Js.String.length(pattern), ~to_=Js.String.length(s), s)->Js.log
+// λ> ning
+let str = (pattern: string): parser<string> =>
+    Parser({ runParser: s => {
+        let (x, remainingStr) = splitAt(s, Js.String.length(pattern))
+        matchStr(pattern, s) ? Some((remainingStr, x)) : None
+    }})
+
+let space: parser<string> =
+    Parser({ runParser: s => {
+        let (x, remainingStr) = splitAt(s, 1)
+        (" " == x) ? Some((remainingStr, x)) : None
+    }})
+
+let empty: parser<string> =
+    Parser({ runParser: s => {
+        ("" == s) ? Some((s, s)) : None
+    }})
+
+let rec collectUntil = (s: string, pattern: string): option<(string, string)> => {
+    let (x, remainingStr) = splitAt(s, 1)
+    x == pattern ? Some((x, remainingStr)) : contCollectUntil(x, remainingStr, pattern)
+} and contCollectUntil = (collected: string, s: string, pattern: string) => {
+    if Js.String.length(s) == 0 {
+        None 
+    } else {
+        let (x, remainingStr) = splitAt(s, 1)
+        x == pattern ? Some((x ++ remainingStr, collected)) : contCollectUntil(collected ++ x, remainingStr, pattern)
+    }
+}
+
+let takeUntil = (pattern: string): parser<string> =>
+    Parser({ runParser: s => {
+        switch collectUntil(s, pattern) {
+            | Some((remaining_str, matched_str)) => Some((remaining_str, matched_str))
+            | None => None
+        }
+    }})
+
+let load_p: parser<replCommand> = {
+    ((_, _, filename, ext) => LoadModule(filename ++ ext))
+    ->ParserApplicative.fmap(str(":load"))
+    ->ParserApplicative.apply(space)
+    ->ParserApplicative.apply(takeUntil("."))
+    ->ParserApplicative.apply(str(".res"))
+}
+```
+
+With this code in place, we can now start testing to ensure we're creating a replCommand for each successfully parsed string across all of the cases we want to handle in the REPL. We'll use [rescript-test](https://github.com/bloodyowl/rescript-test).
+
+./tests/repl-commands-parser/ParserCombinators_test.res
+```res
+open Test
+open TestUtils
+open ParserCombinators
+
+test("Successfully parses appropriate input for the ':load' command", () => {
+    let result = Parser.parseReplCommand(loadCommandP, ":load some_filename.res")
+    let expected = Some(("", REPLCommands.LoadModule("some_filename.res")))
+    equals(expected, result)
+})
+
+test("Fails to parse when input for the ':load' command consists of a file with any extension other than .res", () => {
+    let result = Parser.parseReplCommand(loadCommandP, ":load some_filename.txt")
+    let expected = None
+    equals(expected, result)
+})
+
+test("Successfully parses appropriate input for the ':{' (start multiline mode) command", () => {
+    let result = Parser.parseReplCommand(startMultiLineCommandP, ":{")
+    let expected = Some(("", REPLCommands.StartMultiLineMode))
+    equals(expected, result)
+})
+
+test("Fails to parse when input for the ':{' (start multiline mode) command is anything aside from ':{'", () => {
+    let result = Parser.parseReplCommand(startMultiLineCommandP, ":{z")
+    let expected = None
+    equals(expected, result)
+})
+
+test("Successfully parses appropriate input for the '}:' (end multiline mode) command", () => {
+    let result = Parser.parseReplCommand(endMultiLineCommandP, "}:")
+    let expected = Some(("", REPLCommands.EndMultiLineMode))
+    equals(expected, result)
+})
+
+test("Fails to parse when input for the '}:' (end multiline mode) command is anything aside from '}:'", () => {
+    let result = Parser.parseReplCommand(startMultiLineCommandP, "}:a")
+    let expected = None
+    equals(expected, result)
+})
+```
+
+src/repl-logic/REPLLogic.res
+```res
+open Parser
+open ParserCombinators
+open REPLCommands
+
+// NOTE:
+// Well the next day as I was looking at this again and the thought popped up in my mind...
+// An Alternative instance for option can be used here to prevent having to throw the error for the invariant violation case...
+// parseReplCommand(loadCommandP, s) <|> parseReplCommand(startMultiLineCommandP, s) <|> Parser.parseReplCommand(endMultiLineCommandP, s) <|> Some(RescriptCode(s))
+let parseReplCommand = s => {
+    let xs = [
+        Parser.parseReplCommand(loadCommandP, s),
+        Parser.parseReplCommand(startMultiLineCommandP, s),
+        Parser.parseReplCommand(endMultiLineCommandP, s)
+    ]
+    let ys = Js.Array.filter(x => Belt.Option.isSome(x), xs)
+
+    if Belt.Array.length(ys) == 0 {
+        REPLCommands.RescriptCode(s)
+    } else {
+        switch ys[0] {
+            | Some((_, x)) => x
+            | _ => Js.Exn.raiseError("INVARIANT VIOLATION: Impossible state, Nones were filtered out of the array prior to this section of the code")
+        }
+    }
+}
+
+let parseAndHandleActions = (s: string) => {
+    Promise.make((resolve, _reject) => {
+        switch parseReplCommand(s) {
+            | StartMultiLineMode => {
+                // TODO: Update state to reflect entering multiline mode
+                // will need to modify some state to indicate that future lines should be appended to a string stored on state
+                resolve(. DomainLogicAlg.Continue)
+            }
+            | EndMultiLineMode => {
+                // TODO: Update state to reflect exiting multiline mode and
+                // persist and build entered rescript code
+                // will need to retrieve appended string from state, append it to file and run the res:build/rollback procedure
+                resolve(. DomainLogicAlg.Continue)
+            }
+            | LoadModule(_filename) => {
+                // TODO: Load rescript file and all of the specified dependencies in their necessary order.
+                resolve(. DomainLogicAlg.Continue)
+            }
+            | RescriptCode(_s) => {
+                // TODO
+                resolve(. DomainLogicAlg.Continue)
+            }
+        }
+    })
+}
+```
+
+Next we'll write tests to ensure that the final overall parse of the string the user inputs at the repl properly yields an output which we can pattern match and then act upon in parseAndHandleActions.
+
+tests/repl-logic/REPLLogic_test.res
+```res
+open Test
+open TestUtils
+open ParserCombinators
+
+test("Successfully parses the ':load' command", () => {
+    let result = REPLLogic.parseReplCommand(":load some_filename.res")
+    let expected = REPLCommands.LoadModule("some_filename.res")
+    equals(expected, result)
+})
+
+test("Successfully parses the ':{' (start multiline mode) command", () => {
+    let result = REPLLogic.parseReplCommand(":{")
+    let expected = REPLCommands.StartMultiLineMode
+    equals(expected, result)
+})
+
+test("Successfully parses the '}:' (end multiline mode) command", () => {
+    let result = REPLLogic.parseReplCommand("}:")
+    let expected = REPLCommands.EndMultiLineMode
+    equals(expected, result)
+})
+
+test("All other string input yields the RescriptCode command", () => {
+    let result = REPLLogic.parseReplCommand("some user input that won't compile")
+    let expected = REPLCommands.RescriptCode("some user input that won't compile")
+    equals(expected, result)
+})
+```
+
+And now the implementation of DomainLogicAlg in src/REPL.res is currently:
+```res
+module DomainLogicAlg = {
+    let handleUserInput = (s: string) =>
+        REPLLogic.parseAndHandleActions(s)
+
+    let cleanup = () => {
+        try {
+            unlinkSync("./src/RescriptRepl.res")
+            unlinkSync("./src/RescriptRepl.bs.js")
+            ()
+        } catch {
+            | _ => ()
+        }
+    }
+}
+```
+
+With this in place, we can start to work on our implementation of DomainLogicAlg.handleUserInput/1 function.

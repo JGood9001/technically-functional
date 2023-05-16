@@ -20,7 +20,7 @@ function $$default(props) {
 }
 
 function getStaticProps(_ctx) {
-  var posts_directory = Path.join(Process.cwd(), "/posts");
+  var posts_directory = Path.join(Process.cwd(), "/blog-posts");
   var filenames = Fs.readdirSync(posts_directory).filter(function (x) {
         return Caml_array.get(x.split("."), 1) !== "js";
       });
@@ -36,7 +36,7 @@ function getStaticProps(_ctx) {
   return files.then(function (xs) {
               var ys = Belt_Array.map(xs, (function (x) {
                       return {
-                              path: "/posts/" + x.matter.data.slug,
+                              path: "/blog/" + x.matter.data.slug,
                               title: x.matter.data.title
                             };
                     }));

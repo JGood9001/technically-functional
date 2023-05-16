@@ -16,24 +16,16 @@ type props = {
   posts: array<post_details>
 }
 
-
 let default = (props: props) =>
     <div>
-    // [{"path":"/posts/mdx-page","title":"MDX Page"}]
       {
         props.posts->Belt.Array.mapWithIndex((i, post) => (
           <Link key={Belt.Int.toString(i)} href={post["path"]}>{React.string(post["title"])}</Link>
         ))->React.array
       }
-      // <Link href="/posts/1"> {React.string("Post 1")} </Link>
-      // <Link href="/posts/2"> {React.string("Post 2")} </Link>
-      // <div>{React.string(Js.Json.stringifyAny(props.posts)->Belt.Option.getUnsafe)}</div>
     </div>
 
 // path.join -> https://github.com/TheSpyder/rescript-nodejs/blob/main/src/Path.res#L24
-// type processt 
-// @module external process: processt = "process"
-// @module("process") external cwd: () => string = "cwd"
 // process.cwd -> https://github.com/TheSpyder/rescript-nodejs/blob/main/src/Process.res#L118
 // fs.readdirSync -> https://github.com/TheSpyder/rescript-nodejs/blob/main/src/Fs.res#L224
 type filename_and_matter = { filename: string, matter: gray_matter_content }
@@ -44,8 +36,8 @@ type filename_and_matter = { filename: string, matter: gray_matter_content }
 // of using bs.js.
 // https://github.com/JGood9001/rescript-repl/blob/main/src/repl-logic/REPLLogic.res#L34
 let getStaticProps = (_ctx) => {
-  let posts_directory = NodeJs.Path.join([NodeJs.Process.cwd(NodeJs.Process.process), "/posts"]) // "pages/posts"])
-  let filenames = Js.Array.filter(x => Js.String.split(".", x)[1] !== "js", NodeJs.Fs.readdirSync(posts_directory)) // => [ 'index.js', 'my-mdx-page.mdx' ]
+  let posts_directory = NodeJs.Path.join([NodeJs.Process.cwd(NodeJs.Process.process), "/blog-posts"])
+  let filenames = Js.Array.filter(x => Js.String.split(".", x)[1] !== "js", NodeJs.Fs.readdirSync(posts_directory))
 
   let files = Js.Promise.all(filenames->Belt.Array.map(filename => {
     let filepath = NodeJs.Path.join([posts_directory, filename])
@@ -57,7 +49,7 @@ let getStaticProps = (_ctx) => {
 
   Js.Promise.then_(xs => {
     let ys = xs->Belt.Array.map(x => ({
-      "path": `/posts/${x["matter"]["data"]["slug"]}`,
+      "path": `/blog/${x["matter"]["data"]["slug"]}`,
       "title": x["matter"]["data"]["title"]
     }))
     Js.Promise.resolve({ "props": { "posts": ys } })

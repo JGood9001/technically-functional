@@ -1,0 +1,735 @@
+---
+title: "Part 3: Creating a REPL for Rescript using Tagless Final"
+slug: "part-3-creating-a-repl-for-rescript-using-tagless-final"
+description: "Creating a REPL for Rescript using Tagless Final"
+date: "May 15, 2023"
+---
+
+Make a note early on that when I used module type or interface they are synonymous.
+
+Reading and Evalutating ReScript Code will require us to:
+1. Write user input to a ./src/RescriptRepl.res file
+2. Run the rescript build command to compile the code to JavaScript
+3. Finally, evaluate the JavaScript code
+
+NOTE:
+I added a type t to the DomainLogicAlg module type, and then had to handle the plumbing of passing it down to handleUserInput and REPLLogic.parseHandleActions (which required some updates in NewRepl.res (the file with the function that actually uses the CLI and DL interface implementations))
+
+It wasn't necessary to wrap type t in another type to be able to use it... but some of the difficulty does come from annotating any of the functions (aside from functions which are on the module type/interface itself) as receiving or returning DomainLogicAlg.t (compilation errors every time).
+
+Also, if (type t = DomainLogicAlg.domain_logic_state) is removed from the implementation of that module OR the declaration of the repl function in src/new-repl-impl/NewRepl.res, then there's a compilation error; however, wouldn't it be desirable to have type t be variable for DL in NewRepl.res?
+
+Regarding the note above, needed to add the following types to keep track of the state of the repl:
+```res
+type multiline_mode_state = {
+    active: bool,
+    rescipe_code_input: option<string>,
+}
+
+type domain_logic_state = {
+    multiline_mode: multiline_mode_state,
+    prev_file_contents_state: option<string>,
+}
+
+module type DomainLogicAlg = {
+    type t
+    // ...rest
+}
+```
+
+However, this posed the problem, in that the way I initially implemented repl/2 inside of src/new-repl-impl/NewRepl.res would require the type signature to change to:
+```res
+let repl = async (module (CLIO : CommandLineIOAlg), module (DL : DomainLogicAlg with type t = DomainLogicAlg.domain_logic_state)) => {
+let cliInterface = CLIO.on(CLIO.make(), "close", DL.cleanup)
+let close = () => CLIO.close(cliInterface)
+let prompt = async (s) => await CLIO.prompt(cliInterface, "\u03BB> ", DL.handleUserInput(s))
+let state = DL.make()
+
+let rec run_loop = async (s) => {
+    let contOrClose = await prompt(s)
+        await handleContOrClose(contOrClose, run_loop, close)
+    }
+
+    await run_loop(state)
+}
+```
+
+ (TODO: edit)
+The domain_logic_state will need to be passed through the recursive invocations of run_loop, but it isn't ideal to have to specify what t should be within this block of code, as we lose the ability to swap in any arbitrary DomainLogicAlg we want. I don't know what the future holds, but perhaps there's a scenario the arises where we don't want t to be DomainLogicAlg.domain_logic_state. Then again, perhaps this is never the case, but this is still an exercise for me on how I might approach future projects, and while this sort of flexibility may be irrelevant here, I still want to explore how shifting things around affects the outcome.
+
+A more ideal version would look like (less the Promise.make at the bottom to force the return type to be Promise.t\<unit\> instead of Prompt.t\<cont_or_close\<DomainLogicAlg.t\>\>):
+```res
+let repl = async (module (CLIO : CommandLineIOAlg), module (DL : DomainLogicAlg)) => {
+    let cliInterface = CLIO.on(CLIO.make(), "close", DL.cleanup)
+    let close = () => CLIO.close(cliInterface)
+    let prompt = async (s) => await CLIO.prompt(cliInterface, "\u03BB> ", DL.handleUserInput(s))
+    (await DL.start_repl(prompt, close))->ignore
+    Promise.make((resolve, _reject) => resolve(. ()))
+}
+```
+
+Then src/interfaces/DomainLogicAlg.res is updated to:
+```res
+module type DomainLogicAlg = {
+    type t
+
+    let make : () => t
+    let handleUserInput : t => string => Promise.t<cont_or_close<t>>
+    let start_repl : (t => Promise.t<cont_or_close<t>>) => (() => ()) => Promise.t<cont_or_close<t>>
+    // any way to make this optional?
+    let cleanup : () => ()
+}
+```
+
+Then we need to update the implementation of DomainLogicAlg to add make and start_repl:
+```res
+module DomainLogicAlg = {
+    type t = DomainLogicAlg.domain_logic_state
+
+    let make = () => {
+        multiline_mode: {
+            active: false,
+            rescipe_code_input: None,
+        },
+        prev_file_contents_state: None,
+    }
+
+    let start_repl = (prompt, close) =>
+        REPLLogic.start_repl(make, prompt, close)
+
+    let handleUserInput = state => (s: string) =>
+        REPLLogic.parseAndHandleActions(state, s)
+
+    let cleanup = () => {
+        // https://nodejs.org/api/fs.html#fsaccesssyncpath-mode
+        // Don't fancy any of the available functions (that don't require reading line by line) for checking if a file exits.
+        // So I'll just do a try/catch here to prevent any error message from bubbling up if these files don't exist.
+        // Really not necessary to handle any error that does arise.
+        try {
+            unlinkSync("./src/RescriptRepl.res")
+            unlinkSync("./src/RescriptRepl.bs.js")
+            ()
+        } catch {
+            | _ => ()
+        }
+    }
+}
+```
+
+Finally, we add start_repl/3 in /src/repl-logic/REPLLogic.res
+```res
+let handleContOrClose = (contOrClose, cont, close) => {
+    Promise.make((resolve, _reject) => {
+        switch contOrClose {
+            | Continue(s) => { // : DomainLogicAlg.state<DomainLogicAlg.t>
+                cont(s)->Promise.then(_ => Promise.make((res, _rej) => res(. ())))->ignore // the Promise.then becomes necessary because the recursive function is async... now
+                resolve(. contOrClose)
+            }
+            | Close => {
+                Js.log("See you Space Cowboy")
+                close()
+                resolve(. contOrClose)
+            }
+        }
+    })
+}
+
+let start_repl = async (make, prompt, close) => {
+    let state = make()
+
+    let rec run_loop = async (s) => {
+        let contOrClose = await prompt(s)
+        await handleContOrClose(contOrClose, run_loop, close)
+    }
+
+    await run_loop(state)
+}
+```
+
+At this point, everything is compiling again.
+
+Now, we're in a spot where we have the necessary state available such that we can handle the ReScriptCode case in /src/repl-logic/REPLLogic.res. We'll have to implement a few more parsers, as we'll want to build, evaluate, and then rollback the code saved to the temporary src/RescriptREPL.res file if the Rescript code entered at the REPL starts with Js.log or ends with ->Js.log. This is a scenario where the user just wants to view a result really fast, but doesn't intend for that code to be evaluated on subsequent builds and evaluations.
+
+To do so, we'll need to implement an Alternative instance for Parser.
+
+src/interfaces/Alternative.res
+```res
+open Utils
+open Applicative
+
+module type Alternative = {
+    include Applicative
+    let empty: t<'a>
+    let alternative: t<'a> => t<'a> => t<'a>
+}
+```
+
+src/repl-commands-parser/Parser.res
+```res
+module ParserAlternative : (Alternative with type t<'a> = parser<'a>) = {
+    include ParserApplicative
+    let empty = Parser({ runParser: _ => None }) // pure(None)
+    let alternative = (Parser(p1), Parser(p2)) => {
+        Parser({
+            runParser: s => {
+                switch p1.runParser(s) {
+                    | Some(remainingStr, result) => Some(remainingStr, result)
+                    | None => {
+                        switch p2.runParser(s) {
+                            | Some(remainingStr, result) => Some(remainingStr, result)
+                            | None => None
+                        }
+                    }
+                }
+            }
+        })
+    }
+    let some = (Parser(p)) => {
+        // repeatedly invoke parser with s
+        // return first case where Some is yielded
+        // and drop the first char from the string and retry if None is yielded
+        let rec run = s => {
+            if Js.String.length(s) == 0 {
+                None
+            } else {
+                switch p.runParser(s) {
+                    | Some(x) => Some(x)
+                    | None => {
+                        let (_, remainingStr) = splitAt(s, 1)
+                        run(remainingStr)
+                    }
+                }
+            }
+        }
+
+        Parser({ runParser: run })
+    }
+}
+```
+
+src/repl-commands-parser/ParserCombinators.res
+```res
+let rescriptCodeStartsWithJsLogP: parser<string> =
+    (x => x)->ParserApplicative.fmap(str("Js.log"))
+let rescriptCodeEndsWithJsLogP: parser<string> =
+    ((x, _) => x)->ParserApplicative.fmap(ParserApplicative.some(str("->Js.log")))->ParserApplicative.apply(empty)
+
+let rescriptCodeStartsOrEndsWithJsLogP: parser<string> =
+    ParserAlternative.alternative(rescriptCodeStartsWithJsLogP, rescriptCodeEndsWithJsLogP)
+```
+
+We'll also want to make sure these parsers are tested.
+```res
+tests/repl-commands-parser/ParserCombinators_test.res
+    test("rescriptCodeStartsWithJsLogP Successfully parses when the string starts with Js.log", () => {
+    let result =  Parser.runParser(rescriptCodeStartsWithJsLogP, "Js.log")
+    let expected = Some(("", "Js.log"))
+    equals(expected, result)
+})
+
+test("rescriptCodeStartsWithJsLogP Fails to parse when Js.log is preceded by any arbitrary series of characters", () => {
+    let result = Parser.runParser(rescriptCodeStartsWithJsLogP, "dsads Js.log")
+    let expected = None
+    equals(expected, result)
+})
+
+test("rescriptCodeEndsWithJsLogP Successfully parses when the string ends ONLY with ->Js.log", () => {
+    let result = Parser.runParser(rescriptCodeEndsWithJsLogP, "x->Js.log")
+    let expected = Some(("", "->Js.log"))
+    equals(expected, result)
+})
+
+test("rescriptCodeEndsWithJsLogP Fails to parse when ->Js.log is followed by anything other than an empty string", () => {
+    let result = Parser.runParser(rescriptCodeEndsWithJsLogP, "x->Js.log and more")
+    let expected = None
+    equals(expected, result)
+})
+
+// simple tests to verify the Alternative instance is working appropriately
+test("rescriptCodeStartsOrEndsWithJsLogP Successfully parses when the string starts with Js.log", () => {
+    let result = Parser.runParser(rescriptCodeStartsOrEndsWithJsLogP, "Js.log")
+    let expected = Some(("", "Js.log"))
+    equals(expected, result)
+})
+
+test("rescriptCodeStartsOrEndsWithJsLogP Successfully parses when the string ends ONLY with ->Js.log", () => {
+    let result = Parser.runParser(rescriptCodeStartsOrEndsWithJsLogP, "->Js.log")
+    let expected = Some(("", "->Js.log"))
+    equals(expected, result)
+})
+```
+
+With that out of the way, we'll actually start working on the RescriptCode case in parseAndHandleCommands.
+
+  The flow will handle:
+    1. Retrieving the previous contents of the src/ReScriptREPL.res file and concatenating the most recent input to the REPL to the end of it.
+    2. Writing the result of step 1 to the file
+    3. Building the ReScript code leveraging ChildProcess from NodeJs
+       - if the build succeeds, then we want to evaluate the code inside the generated JavaScript file.
+       - if the build fails, then we want to rollback the src/RescriptREPL.res file to the previous contents.
+    4. Exceptions to the normal flow of the above steps will be when the input string starts with "Js.log" or ends with "->Js.log", where we'll rollback the contents of the file 
+
+Just the same way as this series of blog posts started, this section of the code isn't structured in a way that facilitates testing.
+
+Here's the initial version of building ReScript code:
+```res
+// https://github.com/TheSpyder/rescript-nodejs/blob/main/src/ChildProcess.res#L81
+// external exec: (string, (Js.nullable<Js.Exn.t>, Buffer.t, Buffer.t) => unit) => t = "exec"
+let build_rescript_code = (prev_contents, f) => {
+    // NOTE: I thought there was a way to suppress warnings, but that doesn't seem to be the case.
+    // https://rescript-lang.org/docs/manual/latest/build-overview
+    ChildProcess.exec("npm run res:build", (error, stdout, stderr) => {
+        if (!Js.isNullable(error)) {
+            // https://rescript-lang.org/docs/manual/latest/api/js/nullable#bind
+            Js.Nullable.bind(error, (. error_str) => {
+                switch error_str -> Js.Exn.message {
+                    | Some(msg) => {
+                        Js.log("ERROR: " ++ msg)
+                        // TODO: Will need to see if I can improve highlighting the error later, but for now
+                        // this at least outputs whether the build succeeded/failed and will highlight the error
+                        // that caused it within the RescriptRepl.res file.
+                        Js.log("stdout: " ++ Buffer.toString(stdout))
+
+                        // Rollback to last successful file build
+                        writeFileSync("./src/RescriptRepl.res", prev_contents) -> ignore
+                    }
+                    | None => ()
+                }
+            }) -> ignore
+        } else {
+            f()
+        }
+    })
+}
+```
+
+However, this would benefit from being restructured into the Tagless Final style as well, so that we may be able to swap an instance which performs IO, with one that manually fails/succeeds in order to test that the rest of the code which follows yields an expected result in response to that failure/success.
+
+src/repl-logic/REPLLogic.res
+```res
+type rescriptBuildResult = BuildSuccess | BuildFail
+
+module type RescriptBuild = {
+    type t = rescriptBuildResult
+    let build: () => Promise.t<rescriptBuildResult>
+}
+
+// returning a promise becomes necessary here, as the return type of ChildProcess.exec is NodeJs.ChildProcess.t
+let build = () => {
+    Promise.make((resolve, _reject) => {
+        ChildProcess.exec("npm run res:build", (error, stdout, stderr) => {
+            if (!Js.isNullable(error)) {
+                Js.Nullable.bind(error, (. error_str) => {
+                    switch error_str -> Js.Exn.message {
+                        | Some(msg) => {
+                            Js.log("ERROR: " ++ msg)
+                            resolve(. BuildFail)
+                        }
+                        | None => resolve(. BuildFail)
+                    }
+                }) -> ignore
+            } else {
+                resolve(. BuildSuccess)
+            }
+        })->ignore
+    })
+}
+
+module RescriptBuild = {
+    let build = build
+}
+```
+
+We'll also want to create module types for file operations and the evaluation of the JS code:
+
+To implement a test instance of FileOperations, the first thing that comes to my mind is to use a mutable reference (simulating a file directory). I'll take that approach for now, but perhaps a different solution will come to mind later.
+
+If we were working in Haskell/PureScript and had these instances running in the Reader Monad, then I'd imagine just getting the reference to the simulated file directory from there. This being the pure functional programming way.
+
+For the implementation of read we'll need to use a parser to ensure that the string passed in refers to a file rather than a directory (as the type filepath seen later is used more for clarification at the call site of write, rather than using a smart constructor to maintain this invariant required of read).
+```res
+let rescriptFileP: parser<string> =
+    ((x, _) => x)->ParserApplicative.fmap(ParserAlternative.some(str(".res")))->ParserApplicative.apply(empty)
+
+let javascriptFileP: parser<string> =
+    ((x, _) => x)->ParserApplicative.fmap(ParserAlternative.some(str(".bs.js")))->ParserApplicative.apply(empty)
+
+let rescriptJavascriptFileP =
+    ParserAlternative.alternative(rescriptFileP, javascriptFileP)
+```
+
+src/repl-logic/REPLLogic.res
+```res
+type filepath = Filepath(string)
+
+module type FileOperations = {
+    let read: filepath => string
+    let write: filepath => string => ()
+}
+
+let isFilepath = (s: string): bool => {
+    switch Parser.runParser(rescriptJavascriptFileP, s) {
+        | Some(_) => true
+        | None => false
+    }
+}
+
+module FileOperations = {
+    let write = (Filepath(s), contents) => writeFileSync(s, contents)
+    // if read fails, then just create ReScriptREPL.res and then return the empty string
+    let read = (Filepath(s)) => {
+        // So long as the string passed in refers to a filepath, then the only case
+        // which throws an exception is where the file doesn't exist.
+        if isFilepath(s) {
+            try {
+                readFileSync(s, "utf8")
+            } catch {
+                | _ => {
+                    write(Filepath(s), "")
+                    ""
+                }
+            }
+        } else {
+            write(Filepath(s), "")
+            ""
+        }
+    }
+}
+
+type javaScriptCode = JavaScriptCode(string)
+
+module type EvalJavaScriptCode = {
+    let eval: javaScriptCode => ()
+}
+
+let eval_js_code = (JavaScriptCode(code)) => {
+    try {
+        eval(code)
+    } catch {
+        | _ => Js.log("ERROR: Failed to evalutate the following JavaScript code: \n" ++ code)
+    }
+}
+```
+
+We're going to update the arguments that parseAndHandleCommands/2 accepts, in order to facilitate passing in prod/test instances.
+
+The module DomainLogicAlg.handleUserInput function in ReplV2.res will now look like:
+```res
+let handleUserInput = state => (s: string) =>
+    REPLLogic.parseAndHandleCommands(state, s, module(REPLLogic.FileOperations), module(REPLLogic.RescriptBuild), module(REPLLogic.EvalJavaScriptCode))
+```
+
+Then the function which handles appending the repl input to the existing file, running rescript build, evaluating the generated javascript, and handling rollback scenarios:
+```res
+let startsOrEndsWithJsLog = (s: string): bool => {
+    switch Parser.runParser(rescriptCodeStartsOrEndsWithJsLogP, s) {
+        | Some(_) => true
+        | None => false
+    }
+}
+
+let handleBuildAndEval = (code_str, module(FO : FileOperations), module(RB : RescriptBuild), module(EvalJS : EvalJavaScriptCode)) => {
+    let prevContents = FO.read(Filepath("src/RescriptREPL.res"))
+    FO.write(Filepath("./src/RescriptREPL.res"), prevContents ++ "\n" ++ code_str)
+    RB.build()
+    -> Promise.then(result => {
+        Promise.make((resolve, _reject) => {
+            switch result {
+                | BuildFail => {
+                    // Rolling back the contents of RescriptREPL.res to the previous contents
+                    FO.write(Filepath("./src/RescriptREPL.res"), prevContents)
+                    resolve(. ())
+                }
+                | BuildSuccess => {
+                    let jsCodeStr = FO.read(Filepath("./src/RescriptREPL.bs.js"))
+                    EvalJS.eval(JavaScriptCode(jsCodeStr))
+                    if startsOrEndsWithJsLog(code_str) {
+                        FO.write(Filepath("./src/RescriptREPL.res"), prevContents)
+                    }
+                    resolve(. ())
+                }
+            }
+        })
+    })->ignore
+}
+```
+
+Then this completes everything that needs to happen in the RescriptCode case:
+```res
+let parseAndHandleCommands = (state: domain_logic_state, s: string, module(FO : FileOperations), module(RB : RescriptBuild), module(EvalJS : EvalJavaScriptCode)) => {
+    Promise.make((resolve, _reject) => {
+        switch parseReplCommand(s) {
+            | RescriptCode(code_str) => {
+                // Without the Promise.then, when a user entering in multiple lines of code in quick succession (+ where some lines contain errors)
+                // will cause the rollback to restore potentially invalid code.
+                handleBuildAndEval(code_str, module(FO), module(RB), module(EvalJS))
+                -> Promise.then(result => {
+                    resolve(. DomainLogicAlg.Continue(state))
+                    Promise.make((resolve, reject) => resolve(. ()))
+                })->ignore
+            }
+            // ...rest unchanged
+        }
+    })
+}
+```
+
+With a few more lines of code we can handle the multiline mode cases, and then move on to the final task of the project.
+
+As I was working on this the next day, I took a moment to consider how loading modules might work. The conclusion was that the current implementation of eval wouldn't suffice, and so the interface and implementation have changed:
+```res
+module type EvalJavaScriptCode = {
+    let eval: javaScriptCode => module (FileOperations) => ()
+}
+
+// NOTE:
+// This version of eval_js_code instead of the above is necessary, because invoking eval from this file results in any
+// file lookup via require inside of RescriptREPL.bs.js being done relative to this file's path (REPLLogic.res) context, instead of
+// in the context of ./src which is required in order to be able to load modules within the scope of the user's current project.
+let eval_js_code = (JavaScriptCode(code), module (FO: FileOperations)) => {
+    try {
+        FO.write(Filepath("./src/eval_js_code.js"), `eval(\`${code}\`)`)
+
+        ChildProcess.exec("node ./src/eval_js_code.js", (error, stdout, stderr) => {
+            if (!Js.isNullable(error)) {
+                // https://rescript-lang.org/docs/manual/latest/api/js/nullable#bind
+                Js.Nullable.bind(error, (. error_str) => {
+                    switch error_str -> Js.Exn.message {
+                        | Some(msg) => {
+                            Js.log("ERROR running JavaScript code: " ++ msg)
+                            Js.log("stdout: " ++ Buffer.toString(stdout))
+                            ()
+                        }
+                        | None => ()
+                    }
+                }) -> ignore
+            } else {
+                Js.log(stdout)
+                ()
+            }
+        })->ignore
+    } catch {
+        | x => {
+            Js.log("ERROR: Failed to evalutate the following JavaScript code: \n" ++ code)
+            Js.log("REASON: ")
+            Js.log(x)
+        }
+    }
+}
+```
+
+Now we're set up to implement :load, which will just require that any time a user uses :load, open Filename will be added to a group near the top of the ReScript file, and then we can just invoke the handleBuildAndEval function after that.
+
+We'll implement the ":{", and "}:" cases first and then finish off with ":load".
+
+Start multiline mode:
+```res
+let parseAndHandleCommands = (state: domainLogicState, s: string, module(FO : FileOperations), module(RB : RescriptBuild), module(EvalJS : EvalJavaScriptCode)) => {
+    Promise.make((resolve, _reject) => {
+        switch parseReplCommand(s) {
+            | StartMultiLineMode => {
+                let updated_state = { multilineMode: { active: true, rescriptCodeInput: Some("") }}
+                resolve(. DomainLogicAlg.Continue(updated_state))
+            }
+            ...rest
+        }
+    }
+}
+```
+
+Then while multilineMode.active is true, we'll want to append subsequent input to multilineMode.rescriptCodeInput in the RescriptCode case:
+// This pattern just kept popping up in this file
+```res
+let then = (p: Promise.t<'a>, f: 'a => ()): Promise.t<()> => {
+    p
+    ->Promise.then(x => {
+        Promise.make((resolve, _reject) => {
+            f(x)
+            resolve(. ())
+        })
+    })
+}
+
+let handleRescriptCodeCase = (state: domainLogicState, nextCodeStr: string, module(FO : FileOperations), module(RB : RescriptBuild), module(EvalJS : EvalJavaScriptCode)): Promise.t<domainLogicState> => {
+    Promise.make((resolve, _reject) => {
+        if state.multilineMode.active {
+            switch state.multilineMode.rescriptCodeInput {
+                | Some(prevCodeStr) => {
+                    let updated_state = { multilineMode: { active: true, rescriptCodeInput: Some(prevCodeStr ++ "\n" ++ nextCodeStr) }}
+                    resolve(. updated_state)
+                }
+                | None => Js.log("INVARIANT VIOLATION: The RescriptCode case expects for there to be some rescriptCodeInput present.")
+            }
+        } else {
+            // Without the Promise.then, when a user is entering multiple lines of code in quick succession (+ where some lines contain errors)
+            // will cause the rollback to restore potentially invalid code.
+            handleBuildAndEval(nextCodeStr, module(FO), module(RB), module(EvalJS))
+            ->then(_ => resolve(. state))->ignore
+        }
+    })
+}
+```
+
+Finally, in the EndMultiLine case we retrieve the multilineMode.rescriptCodeInput string, invoke handleBuildandEval, and reset multilineMode state to deactivate multiline mode.
+```res
+let handleEndMultiLineCase = (state: domainLogicState, module (FO: FileOperations), module (RB: RescriptBuild), module (EvalJS: EvalJavaScriptCode)): Promise.t<domainLogicState> => {
+    switch state.multilineMode.rescriptCodeInput {
+        | Some(codeStr) => {
+            handleBuildAndEval(codeStr, module(FO), module(RB), module(EvalJS))
+            -> Promise.then(result => {
+                let updatedState = { multilineMode: { active: false, rescriptCodeInput: None }}
+                Promise.make((resolve, _reject) => resolve(. updatedState))
+            })
+        }
+        | None => Js.Exn.raiseError("INVARIANT VIOLATION: The EndMultiLineMode case expects for there to be some rescriptCodeInput present.")
+    }
+}
+```
+
+Now for the LoadModule case, we'll need to use a Parser again, as we'll want to ensure that any modules loaded are always added to the top of the file, so we'll create a comment at the top of the ReScriptREPL.res file that can be parsed in order to determine where the 'open Module' should be appended to /src/repl-commands-parser/ParserCombinators.res:
+```res
+let openModuleLineP =
+    ((openStr, _space, moduleName) => openStr ++ " " ++ moduleName ++ "\n")
+    ->ParserApplicative.fmap(str("open")) 
+    ->ParserApplicative.apply(space)
+    ->ParserApplicative.apply(takeUntil("\n"))
+
+// Going to need to implement Alternative.many, as you'll want to retrieve all lines that start with open
+let openModuleLinesP =
+    ParserAlternative.many(openModuleLineP)
+
+type openModuleSection = {
+    openModuleLines: string,
+    remainingCodeLines: string
+}
+
+let openModuleSectionP: parser<openModuleSection> =
+    ((_, openModuleLines, remainingCodeLines) => {
+        openModuleLines: Belt.Array.reduce(openModuleLines, "", (a, b) => a ++ b),
+        remainingCodeLines
+    })
+    ->ParserApplicative.fmap(str("// Module Imports"))
+    ->ParserApplicative.apply(openModuleLinesP)
+    ->ParserApplicative.apply(takeUntil("")) // this should collect the remainder of the text...
+```
+
+The many function will need to be added to the Alternative interface to support this /src/repl-commands-parser/Parser.res:
+```res
+// let many: t<'a> => t<array<'a>>
+let many = (Parser(p): parser<string>) => {
+    let rec run = (xs: array<string>, last_seen: string) => s => {
+        if Js.String.length(s) == 0 {
+            Some(last_seen, xs)
+        } else {
+            switch p.runParser(s) {
+                | Some((remainingStr, x)) => {
+                    run(Belt.Array.concat(xs, [x]), remainingStr, remainingStr)
+                }
+                | None => {
+                    let (_, remainingStr) = splitAt(s, 1)
+                    run(xs, last_seen, remainingStr)
+                }
+            }
+        }
+    }
+
+    Parser({ runParser: run([], "") })
+}
+```
+
+Now to test this out and make sure it works.
+
+tests/repl-commands-parser/ParserCombinators_test.res
+```res
+test("Parser.ParserAlternative.many Successfully parsesg many a's", () => {
+    let result = Parser.runParser(Parser.ParserAlternative.many(ParserCombinators.str("a")), "aaab")
+    let expected = Some(("b", ["a", "a", "a"]))
+    equals(expected, result)
+})
+
+test("Parser.ParserAlternative.many Successfully parses many a's", () => {
+    let result = Parser.runParser(Parser.ParserAlternative.many(ParserCombinators.str("ab")), "ababzr")
+    let expected = Some(("zr", ["ab", "ab"]))
+    equals(expected, result)
+})
+
+test("openModuleLineP Successfully parses the a module import from a string of rescript code", () => {
+    let moduleSectionStr = "open Utils"
+
+    let restCodeStr = `
+        let x = 100
+        Js.log(x + 100)
+    `
+
+    let codeStr = moduleSectionStr ++ "\n" ++ restCodeStr
+
+    let result = Parser.runParser(openModuleLineP, codeStr)
+    let expected = Some(("\n" ++ restCodeStr, "open Utils\n"))
+    equals(expected, result)
+})
+
+test("openModuleLinesP Successfully parses a section of module imports from a string of rescript code", () => {
+    let moduleSectionStr =
+        "open Utils\n" ++
+        "open ParserCombinators"
+
+    let restCodeStr = `
+        let x = 100
+        Js.log(x + 100)
+    `
+
+    let codeStr = moduleSectionStr ++ "\n" ++ restCodeStr
+
+    let result = Parser.runParser(openModuleLinesP, codeStr)
+    let expected = Some(("\n" ++ restCodeStr, ["open Utils\n", "open ParserCombinators\n"]))
+    equals(expected, result)
+})
+
+test("openModuleSectionP Successfully parses the module import section from the remaining code in a string of rescript code", () => {
+    let moduleSectionStr =
+        "// Module Imports\n" ++
+        "open Utils\n" ++
+        "open ParserCombinators"
+
+    let restCodeStr = `
+        let x = 100
+        Js.log(x + 100)
+    `
+
+    let codeStr = moduleSectionStr ++ "\n" ++ restCodeStr
+
+    let result = Parser.runParser(openModuleSectionP, codeStr)
+    let expected = Some(("\n" ++ restCodeStr, OpenModuleSection(moduleSectionStr ++ "\n")))
+    equals(expected, result)
+})
+```
+
+Now, putting it all together, the LoadModule case will be:
+```res
+let handleLoadModuleCase = (moduleName: string, module (FO: FileOperations), module (RB: RescriptBuild), module (EvalJS: EvalJavaScriptCode)): Promise.t<()> => {
+    let codeStr = FO.read(Filepath("./src/RescriptREPL.res"))
+    switch Parser.runParser(openModuleSectionP, codeStr) {
+        | Some((remainingCodeStr, OpenModuleSection(openModuleSectionStr))) => {
+            let nextCodeStr = openModuleSectionStr ++ `open ${moduleName}` ++ remainingCodeStr
+
+            handleBuildAndEval(nextCodeStr, module(FO), module(RB), module(EvalJS))
+            -> Promise.then(_result => {
+                Promise.make((resolve, _reject) => resolve(. ()))
+            })
+        }
+        | None => Js.Exn.raiseError("ERROR: failed to parse for the module import section of the rescript file")
+    }
+}
+
+let parseAndHandleCommands = (state: domainLogicState, s: string, module(FO : FileOperations), module(RB : RescriptBuild), module(EvalJS : EvalJavaScriptCode)) => {
+    Promise.make((resolve, _reject) => {
+        switch parseReplCommand(s) {
+            | LoadModule(moduleName) => {
+                handleLoadModuleCase(moduleName, module(FO), module(RB), module(EvalJS))
+                ->then(_ => resolve(. DomainLogicAlg.Continue(state)))->ignore
+            }
+            // ... etc
+        }
+    })
+}
+```
