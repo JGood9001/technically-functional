@@ -18,6 +18,19 @@ type props = {
   pageProps: pageProps,
 }
 
+// Next day looked into the theming situation
+// Saw some blog posts mentioning next-theme package, but my initial impressions of it were low.
+
+// Stumbled upon this
+// https://www.npmjs.com/package/class-variance-authority
+// https://www.youtube.com/watch?v=T-Zv73yZ_QI&t=614s
+// and think it may be the approach I'll want to take.
+
+// Someone in the comment section of the video above mentioned this library too,
+// https://windstitch.vercel.app/
+// There's a similarity between this and the cva library, but will need to check which I'd prefer to use.
+
+// I just know that I prefer these two as there's no need to use context/providers
 let set_body_class = %raw(`
   function(page_props) {
 	  document.body.className = page_props.is_dark ? "dark-mode" : "light-mode"

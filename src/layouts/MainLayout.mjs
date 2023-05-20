@@ -11,16 +11,14 @@ function MainLayout$Navigation(Props) {
                         rel: "stylesheet"
                       })
                 }), React.createElement("nav", {
-                  className: "relative z-10 p-2 h-12 flex border-b border-gray-200 justify-between items-center text-sm"
+                  className: "relative z-10 p-2 pt-8 h-12 flex justify-between items-center text-sm"
                 }, React.createElement(Link, {
                       href: "/",
                       children: React.createElement("span", {
-                            className: "flex text-xl font-normal"
-                          }, React.createElement("span", undefined, "Technically"), React.createElement("span", {
-                                className: "text-orange-800"
-                              }, "Functional"))
+                            className: "text-2xl font-semibold"
+                          }, "Technically Functional")
                     }), React.createElement("div", {
-                      className: "flex w-2/3 justify-end"
+                      className: "flex w-40 justify-between text-lg font-normal"
                     }, React.createElement(Link, {
                           href: "/",
                           children: "Home"
@@ -30,11 +28,7 @@ function MainLayout$Navigation(Props) {
                         }), React.createElement(Link, {
                           href: "/blog",
                           children: "Blog"
-                        }), React.createElement("a", {
-                          className: "px-3 font-bold",
-                          href: "https://github.com/ryyppy/nextjs-default",
-                          target: "_blank"
-                        }, "Github"))));
+                        }))));
 }
 
 function MainLayout(Props) {
@@ -46,7 +40,7 @@ function MainLayout(Props) {
               className: "flex lg:justify-center",
               style: minWidth
             }, React.createElement("div", {
-                  className: "max-w-5xl w-full lg:w-3/4 text-gray-900 font-base"
+                  className: "max-w-5xl w-192 lg:w-3/4 text-gray-900 font-base"
                 }, React.createElement(MainLayout$Navigation, {}), React.createElement("main", {
                       className: "mt-4 mx-4"
                     }, children)));

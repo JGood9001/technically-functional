@@ -6,7 +6,6 @@
   "dependencies": {
     "@mdx-js/loader": "^2.3.0",
     "@mdx-js/react": "^2.3.0",
-    "@next/font": "^13.4.2",
     "@next/mdx": "^13.4.2",
     "@ryyppy/rescript-promise": "2.1.0",
     "gray-matter": "^4.0.3",

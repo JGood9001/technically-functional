@@ -42,18 +42,27 @@ const components = {
 // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-z-touch.min.css"
 export default function PostPage({ source, frontMatter }) {
   return (
-    <article className="prose lg:prose-xl">
+    <article className="prose lg:prose-xl article-styles">
       <div className="post-header">
         <h1>{frontMatter.title}</h1>
         {frontMatter.description && (
           <p className="description">{frontMatter.description}</p>
         )}
       </div>
-      <main>
-        <MDXRemote {...source} components={components} />
-      </main>
-
+      <MDXRemote {...source} components={components} />
+      {/* Not sure why, but only width + max-width adjusts the width of article html tag
+         using width alone won't cause the element's width to increase.
+         Also, applying the tailwind classes w-192 w-max-192 had no effect.
+      */}
       <style jsx>{`
+        .article-styles {
+          margin-left: -1rem;
+          margin-top: 4rem;
+          margin-bottom: 4rem;
+          width: 48rem;
+          max-width: 48rem;
+        }
+
         .post-header h1 {
           margin-bottom: 0;
         }
@@ -61,6 +70,7 @@ export default function PostPage({ source, frontMatter }) {
         .post-header {
           margin-bottom: 2rem;
         }
+
         .description {
           opacity: 0.6;
         }

@@ -17,7 +17,7 @@ type props = {
 }
 
 let default = (props: props) =>
-    <div>
+    <div className="flex">
       {
         props.posts->Belt.Array.mapWithIndex((i, post) => (
           <Link key={Belt.Int.toString(i)} href={post["path"]}>{React.string(post["title"])}</Link>

@@ -10,7 +10,9 @@ import * as Caml_array from "rescript/lib/es6/caml_array.js";
 import GrayMatter from "gray-matter";
 
 function $$default(props) {
-  return React.createElement("div", undefined, Belt_Array.mapWithIndex(props.posts, (function (i, post) {
+  return React.createElement("div", {
+              className: "flex"
+            }, Belt_Array.mapWithIndex(props.posts, (function (i, post) {
                     return React.createElement(Link, {
                                 href: post.path,
                                 children: post.title,

@@ -4,13 +4,15 @@ import * as React from "react";
 
 function $$default(param) {
   return React.createElement("div", {
-              className: "flex"
-            }, React.createElement("div", undefined, React.createElement("h1", {
-                      className: "text-3xl font-bold"
+              className: "relative flex justify-end mt-8"
+            }, React.createElement("div", {
+                  className: "absolute left-0 w-max-80 w-80"
+                }, React.createElement("h1", {
+                      className: "text-5xl font-bold"
                     }, "Let's Level Up with Functional Programming")), React.createElement("div", {
-                  className: "relative z-0 w-192 h-full border-solid border-2 border-blue neg-pt-1"
+                  className: "relative z-0 w-172 h-full neg-pt-1"
                 }, React.createElement("img", {
-                      className: "absolute z-0 neg-top-16 left-16 border-2 border-solid border-blue",
+                      className: "absolute z-0 neg-top-32 left-16",
                       src: "/static/triangle-unit.svg"
                     })));
 }

@@ -1,5 +1,5 @@
 import 'styles/main.css'
-import { Teko } from "@next/font/google"
+import { Teko } from "next/font/google"
 
 // Note:
 // Just renaming $$default to ResApp alone
