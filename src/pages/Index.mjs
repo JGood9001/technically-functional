@@ -2,21 +2,17 @@
 
 import * as React from "react";
 
-function Index$P(Props) {
-  var children = Props.children;
-  return React.createElement("p", {
-              className: "mb-2"
-            }, children);
-}
-
 function $$default(param) {
-  return React.createElement("div", undefined, React.createElement("h1", {
-                  className: "text-3xl font-semibold"
-                }, "What is this about?"), React.createElement(Index$P, {
-                  children: " This is a simple template for a Next\r\n      project using ReScript & TailwindCSS."
-                }), React.createElement("h2", {
-                  className: "text-2xl font-semibold mt-5 text-blue"
-                }, "Quick Start - BUILT VERSION"), React.createElement("pre", undefined, "git clone https://github.com/rescript-nextjs-template.git my-project\r\ncd my-project\r\nrm -rf .git"));
+  return React.createElement("div", {
+              className: "flex"
+            }, React.createElement("div", undefined, React.createElement("h1", {
+                      className: "text-3xl font-bold"
+                    }, "Let's Level Up with Functional Programming")), React.createElement("div", {
+                  className: "relative z-0 w-192 h-full border-solid border-2 border-blue neg-pt-1"
+                }, React.createElement("img", {
+                      className: "absolute z-0 neg-top-16 left-16 border-2 border-solid border-blue",
+                      src: "/static/triangle-unit.svg"
+                    })));
 }
 
 export {

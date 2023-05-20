@@ -11,18 +11,15 @@ function MainLayout$Navigation(Props) {
                         rel: "stylesheet"
                       })
                 }), React.createElement("nav", {
-                  className: "p-2 h-12 flex border-b border-gray-200 justify-between items-center text-sm"
+                  className: "relative z-10 p-2 h-12 flex border-b border-gray-200 justify-between items-center text-sm"
                 }, React.createElement(Link, {
                       href: "/",
-                      children: null
-                    }, React.createElement("img", {
-                          className: "w-5",
-                          src: "/static/zeit-black-triangle.svg"
-                        }), React.createElement("span", {
-                          className: "text-xl ml-2 align-middle font-semibold"
-                        }, "Next", React.createElement("span", {
-                              className: "text-orange-800"
-                            }, " + ReScript"))), React.createElement("div", {
+                      children: React.createElement("span", {
+                            className: "flex text-xl font-normal"
+                          }, React.createElement("span", undefined, "Technically"), React.createElement("span", {
+                                className: "text-orange-800"
+                              }, "Functional"))
+                    }), React.createElement("div", {
                       className: "flex w-2/3 justify-end"
                     }, React.createElement(Link, {
                           href: "/",

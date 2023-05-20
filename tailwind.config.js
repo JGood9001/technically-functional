@@ -4,7 +4,7 @@ module.exports = {
     content: [
       './src/components/**/*.res',
       './src/layouts/**/*.res',
-      './src/*.res',
+      './src/**/*.res',
     ],
     options: {
       safelist: ["html", "body"],
@@ -12,11 +12,16 @@ module.exports = {
   },
   darkMode: false, // or 'media' or 'class'
   theme: {
-    extend: {
-    },
+    extend: {},
     /* Most of the time we customize the font-sizes,
      so we added the Tailwind default values here for
      convenience */
+    height: {
+      192: "48rem",
+    },
+    width: {
+      192: "48rem",
+    },
     fontSize: {
       xs: ".75rem",
       sm: ".875rem",
@@ -30,6 +35,9 @@ module.exports = {
       '6xl': "4rem"
     },
     colors: {
+      'dark': '526F84',
+
+      // rando
       'white': '#f6f6f6',
       'blue': '#1fb6ff',
       'purple': '#7e5bef',

@@ -4,7 +4,26 @@
 @import "./_fonts.css";
 
 body {
-  @apply font-sans bg-white;
+  @apply font-sans bg-dark;
 }
 
 @tailwind utilities;
+
+/* "neg-pt-1":{"padding-top": "-1rem" }, */
+@layer components {
+  .neg-pt-1 {
+    padding-top: -5rem;
+  }
+
+  .neg-top-16 {
+    top: -4rem;
+  }
+
+  .neg-top-32 {
+    top: -8rem;
+  }
+
+  .neg-top-64 {
+    top: -16rem;
+  }
+}

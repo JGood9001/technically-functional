@@ -10,16 +10,11 @@ module P = {
 // https://nextjs.org/learn/basics/create-nextjs-app/setup
 
 let default = () =>
-  <div>
-    <h1 className="text-3xl font-semibold"> {"What is this about?"->React.string} </h1>
-    <P>
-      {React.string(` This is a simple template for a Next
-      project using ReScript & TailwindCSS.`)}
-    </P>
-    <h2 className="text-2xl font-semibold mt-5 text-blue"> {React.string("Quick Start - BUILT VERSION")} </h2>
-    <pre>
-      {React.string(`git clone https://github.com/rescript-nextjs-template.git my-project
-cd my-project
-rm -rf .git`)} //github.com/ryyppy/nextjs-default.git my-project
-    </pre>
+  <div className="flex">
+    <div>
+      <h1 className="text-3xl font-bold"> {"Let's Level Up with Functional Programming"->React.string} </h1>
+    </div>
+    <div className="relative z-0 w-192 h-full border-solid border-2 border-blue neg-pt-1">
+      <img className="absolute z-0 neg-top-16 left-16 border-2 border-solid border-blue" src="/static/triangle-unit.svg" />
+    </div>
   </div>

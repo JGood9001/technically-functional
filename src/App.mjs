@@ -4,9 +4,17 @@ import * as React from "react";
 import * as MainLayout from "./layouts/MainLayout.mjs";
 import * as Router from "next/router";
 
+var set_body_class = (function(page_props) {
+	  document.body.className = page_props.is_dark ? "dark-mode" : "light-mode"
+  });
+
 function $$default(props) {
+  var pageProps = props.pageProps;
+  React.useEffect(function () {
+        return set_body_class(pageProps);
+      });
   var router = Router.useRouter();
-  var content = React.createElement(props.Component, props.pageProps);
+  var content = React.createElement(props.Component, pageProps);
   var match = router.route;
   if (match === "/examples") {
     return React.createElement(MainLayout.make, {

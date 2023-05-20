@@ -10,11 +10,11 @@ module Navigation = {
         href="https://unpkg.com/prism-themes@1.9.0/themes/prism-holi-theme.min.css"
       ></link>
     </Head>
-    <nav className="p-2 h-12 flex border-b border-gray-200 justify-between items-center text-sm">
+    <nav className="relative z-10 p-2 h-12 flex border-b border-gray-200 justify-between items-center text-sm">
       <Link href="/">
-          <img className="w-5" src="/static/zeit-black-triangle.svg" />
-          <span className="text-xl ml-2 align-middle font-semibold">
-            {React.string("Next")} <span className="text-orange-800"> {React.string(" + ReScript")} </span>
+          <span className="flex text-xl font-normal"> // ml-2 align-middle font-semibold">
+            <span>{React.string("Technically")}</span>
+            <span className="text-orange-800"> {React.string("Functional")} </span>
           </span>
       </Link>
       <div className="flex w-2/3 justify-end">

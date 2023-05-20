@@ -4,6 +4,10 @@
 // See https://nextjs.org/docs/advanced-features/custom-app
 type pageProps
 
+// type next_font = { className: string }
+// type opts = { weight: string }
+// @module("@next/font/google") external teko: opts => next_font = "Teko"
+
 module PageComponent = {
   type t = React.component<pageProps>
 }
@@ -14,27 +18,24 @@ type props = {
   pageProps: pageProps,
 }
 
-// https://v0.mdxjs.com/guides/syntax-highlighting
-let components: MDX.components = {
-  pre: props =>
-    <div>{props.children}</div>
-    // <div>{React.string("dafuq")}</div>
-  ,
-  code: props => {
-    Js.log("code's props?")
-    Js.log(props)
-    // {className: 'language-res', children: 'let f = () => Js.log("send it!")\n'}
-    // <pre className="blue" />
-    <pre>{props.children}</pre>
-    // <pre className="blue" />
+let set_body_class = %raw(`
+  function(page_props) {
+	  document.body.className = page_props.is_dark ? "dark-mode" : "light-mode"
   }
-}
+`)
 
 // We are not using `@react.component` since we will never
 // use <App/> within our ReScript code.
 // It's only used within `pages/_app.js`
 let default = (props: props): React.element => {
   let {component, pageProps} = props
+  
+  // LLO/TODO:
+  // https://tailwindcss.com/docs/dark-mode
+  // https://tailscan.com/blog/tailwind-css-flex-a-quick-overview 
+  React.useEffect(() => {
+    set_body_class(pageProps)
+  })
 
   let router = Next.Router.useRouter()
 
