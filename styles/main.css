@@ -4,12 +4,11 @@
 @import "./_fonts.css";
 
 body {
-  @apply font-sans bg-dark;
+  @apply font-sans bg-light; /* this bg will need to change based on whether dark/light mode is active */
 }
 
 @tailwind utilities;
 
-/* "neg-pt-1":{"padding-top": "-1rem" }, */
 @layer components {
   .neg-pt-1 {
     padding-top: -5rem;

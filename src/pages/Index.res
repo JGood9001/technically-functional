@@ -10,13 +10,13 @@ module P = {
 // https://nextjs.org/learn/basics/create-nextjs-app/setup
 
 let default = () =>
-  <div className="relative flex justify-end mt-8">
-    <div className="absolute left-0 w-max-80 w-80">
+  <div className="relative flex justify-end w-full mt-16">
+    <div className="absolute top-10 sm:top-20 left-0 w-full md:w-max-80">
       // border border-gray-200
-      <h1 className="text-5xl font-bold"> {"Let's Level Up with Functional Programming"->React.string} </h1>
+      <h1 className="text-xl w-40 sm:text-2xl sm:w-56 md:text-4xl md:w-66 font-bold"> {"Let's Level Up with Functional Programming"->React.string} </h1>
     </div>
     // TODO: Adjust w-172 to be responsive (this width is directly affecting the triangle-unit svg size)
-    <div className="relative z-0 w-172 h-full neg-pt-1"> // border-solid border-2 border-blue
-      <img className="absolute z-0 neg-top-32 left-16" src="/static/triangle-unit.svg" />
+    <div className="relative min-w-48 w-full z-0 sm:w-172 h-full neg-pt-1"> // border-solid border-2 border-blue
+      <img className="absolute z-0 object-cover neg-top-16 left-8 sm:neg-top-32 sm:left-16" src="/static/triangle-unit.svg" />
     </div>
   </div>

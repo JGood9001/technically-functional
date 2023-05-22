@@ -12,49 +12,65 @@ module.exports = {
   },
   darkMode: false, // or 'media' or 'class'
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'brand': '#04FFFF',
+        'dark': '#526F84',
+        'light': '#ECECFA',
+      },
+      height: {
+        148: "32rem",
+        172: "40rem",
+        192: "48rem",
+      },
+      width: {
+        148: "32rem",
+        172: "40rem",
+        192: "48rem",
+      }
+    },
     /* Most of the time we customize the font-sizes,
      so we added the Tailwind default values here for
      convenience */
-    height: {
-      32: "8rem",
-      34: "8.5rem",
-      36: "9rem",
-      40: "10rem",
-      44: "11rem",
-      48: "12rem",
-      52: "13rem",
+    // height: {
+    //   32: "8rem",
+    //   34: "8.5rem",
+    //   36: "9rem",
+    //   40: "10rem",
+    //   44: "11rem",
+    //   48: "12rem",
+    //   52: "13rem",
 
-      56: "14rem",
-      60: "15rem",
-      64: "16rem",
-      72: "18rem",
-      80: "20rem",
-      96: "24rem",
-      148: "32rem",
-      172: "40rem",
-      192: "48rem",
-      // full: "100%"
-    },
-    width: {
-      32: "8rem",
-      34: "8.5rem",
-      36: "9rem",
-      40: "10rem",
-      44: "11rem",
-      48: "12rem",
-      52: "13rem",
-      56: "14rem",
-      60: "15rem",
-      64: "16rem",
-      72: "18rem",
-      80: "20rem",
-      96: "24rem",
-      148: "32rem",
-      172: "40rem",
-      192: "48rem",
-      // full: "100%"
-    },
+    //   56: "14rem",
+    //   60: "15rem",
+    //   64: "16rem",
+    //   72: "18rem",
+    //   80: "20rem",
+    //   96: "24rem",
+    //   148: "32rem",
+    //   172: "40rem",
+    //   192: "48rem",
+    //   // full: "100%"
+    // },
+    // width: {
+    //   32: "8rem",
+    //   34: "8.5rem",
+    //   36: "9rem",
+    //   40: "10rem",
+    //   44: "11rem",
+    //   48: "12rem",
+    //   52: "13rem",
+    //   56: "14rem",
+    //   60: "15rem",
+    //   64: "16rem",
+    //   72: "18rem",
+    //   80: "20rem",
+    //   96: "24rem",
+    //   148: "32rem",
+    //   172: "40rem",
+    //   192: "48rem",
+    //   // full: "100%"
+    // },
     fontSize: {
       xs: ".75rem",
       sm: ".875rem",
@@ -68,7 +84,7 @@ module.exports = {
       '6xl': "4rem"
     },
     colors: {
-      'dark': '526F84',
+      // 'dark': '#526F84',
 
       // rando
       'white': '#f6f6f6',
