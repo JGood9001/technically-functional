@@ -11,11 +11,13 @@ import GrayMatter from "gray-matter";
 
 function $$default(props) {
   return React.createElement("div", {
-              className: "flex"
+              className: "flex flex-col items-center gap-y-8 gap-x-8 md:grid md:grid-cols-2 mt-24 text-lg font-semibold"
             }, Belt_Array.mapWithIndex(props.posts, (function (i, post) {
                     return React.createElement(Link, {
                                 href: post.path,
-                                children: post.title,
+                                children: React.createElement("div", {
+                                      className: "flex justify-center items-center max-w-96 h-24 pl-4 pr-4 border border-4 border-dark hover:bg-dark hover:text-brand"
+                                    }, React.createElement("span", undefined, post.title)),
                                 key: String(i)
                               });
                   })));

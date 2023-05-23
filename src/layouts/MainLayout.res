@@ -18,9 +18,9 @@ module Navigation = {
         </div>
       </Link>
       <div className="flex gap-4 md:gap-12 justify-between sm:text-md md:text-lg font-normal"> // border border-gray-200
-        <Link href="/"> {React.string("Home")} </Link>
-        <Link href="/about"> {React.string("About")} </Link>
-        <Link href="/blog"> {React.string("Blog")} </Link>
+        <Link href="/"> <span className="hover:border-b-4 hover:border-brand">{React.string("Home")}</span></Link>
+        <Link href="/about"> <span className="hover:border-b-4 hover:border-brand"> {React.string("About")} </span> </Link>
+        <Link href="/blog"> <span className="hover:border-b-4 hover:border-brand"> {React.string("Blog")} </span> </Link>
       </div>
     </nav>
     </>
@@ -28,12 +28,12 @@ module Navigation = {
 
 @react.component
 let make = (~children) => {
-  let minWidth = ReactDOM.Style.make(~minWidth="20rem", ())
-  <div style=minWidth className="flex pl-8 pr-8 sm:pl-20 sm:pr-20 justify-center">
-   // TODO: Adjust this w-192 width to be responsive... (controls the width of the content on the
-   // page)
-    <div className="w-full md:max-w-192 lg:w-3/4 text-gray-900 font-base">
-      <Navigation /> <main className=""> children </main>
+  <div className="relative flex pl-8 pr-8 sm:pl-20 sm:pr-20 justify-center">
+    <div className="w-full h-screen md:max-w-192 text-dark font-base">
+      <Navigation />
+      <main className="mt-16 border">
+        children
+      </main>
     </div>
   </div>
 }

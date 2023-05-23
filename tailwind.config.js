@@ -15,8 +15,9 @@ module.exports = {
     extend: {
       colors: {
         'brand': '#04FFFF',
-        'dark': '#526F84',
+        'dark': '#264c68',
         'light': '#ECECFA',
+        'light-gray': '#E6E6E6'
       },
       height: {
         148: "32rem",
@@ -26,6 +27,14 @@ module.exports = {
       width: {
         148: "32rem",
         172: "40rem",
+        192: "48rem",
+      },
+      minWidth: {
+        48: "12rem",
+        56: "14rem",
+      },
+      maxWidth: {
+        96: "24rem",
         192: "48rem",
       }
     },

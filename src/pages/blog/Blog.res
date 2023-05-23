@@ -8,7 +8,6 @@ type gray_matter_content = { "content": string, "data": gray_matter_data }
 
 // https://willcodefor.beer/posts/rescript-ffi-basics-in-react/
 @module("gray-matter") external matter: string => gray_matter_content = "default"
-
 @module("fs") external readFileSync: string => string => string = "readFileSync"
 
 type post_details = { "path": string, "title": string }
@@ -17,10 +16,14 @@ type props = {
 }
 
 let default = (props: props) =>
-    <div className="flex">
+    <div className="flex flex-col items-center gap-y-8 gap-x-8 md:grid md:grid-cols-2 mt-24 text-lg font-semibold">
       {
         props.posts->Belt.Array.mapWithIndex((i, post) => (
-          <Link key={Belt.Int.toString(i)} href={post["path"]}>{React.string(post["title"])}</Link>
+          <Link key={Belt.Int.toString(i)} href={post["path"]}>
+            <div className="flex justify-center items-center max-w-96 h-24 pl-4 pr-4 border border-4 border-dark hover:bg-dark hover:text-brand">
+              <span>{React.string(post["title"])}</span>
+            </div>
+          </Link>
         ))->React.array
       }
     </div>

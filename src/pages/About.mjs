@@ -3,7 +3,9 @@
 import * as React from "react";
 
 function $$default(param) {
-  return React.createElement("div", undefined, React.createElement("h1", undefined, "About Page"));
+  return React.createElement("div", {
+              className: "border mt-24"
+            }, React.createElement("h1", undefined, "About Page"));
 }
 
 export {

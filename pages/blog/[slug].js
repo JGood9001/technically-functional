@@ -42,11 +42,11 @@ const components = {
 // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-z-touch.min.css"
 export default function PostPage({ source, frontMatter }) {
   return (
-    <article className="prose lg:prose-xl article-styles">
-      <div className="post-header">
-        <h1>{frontMatter.title}</h1>
+    <article className="prose lg:prose-xl md:w-192 article-styles border">
+      <div className="post-header bg-dark">
+        <h1 className="text-brand">{frontMatter.title}</h1>
         {frontMatter.description && (
-          <p className="description">{frontMatter.description}</p>
+          <p className="text-xl text-light-gray">{frontMatter.description}</p>
         )}
       </div>
       <MDXRemote {...source} components={components} />
@@ -56,11 +56,8 @@ export default function PostPage({ source, frontMatter }) {
       */}
       <style jsx>{`
         .article-styles {
-          margin-left: -1rem;
           margin-top: 4rem;
           margin-bottom: 4rem;
-          width: 48rem;
-          max-width: 48rem;
         }
 
         .post-header h1 {
@@ -69,10 +66,6 @@ export default function PostPage({ source, frontMatter }) {
 
         .post-header {
           margin-bottom: 2rem;
-        }
-
-        .description {
-          opacity: 0.6;
         }
       `}</style>
     </article>

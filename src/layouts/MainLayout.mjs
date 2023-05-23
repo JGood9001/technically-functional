@@ -25,28 +25,30 @@ function MainLayout$Navigation(Props) {
                       className: "flex gap-4 md:gap-12 justify-between sm:text-md md:text-lg font-normal"
                     }, React.createElement(Link, {
                           href: "/",
-                          children: "Home"
+                          children: React.createElement("span", {
+                                className: "hover:border-b-4 hover:border-brand"
+                              }, "Home")
                         }), React.createElement(Link, {
                           href: "/about",
-                          children: "About"
+                          children: React.createElement("span", {
+                                className: "hover:border-b-4 hover:border-brand"
+                              }, "About")
                         }), React.createElement(Link, {
                           href: "/blog",
-                          children: "Blog"
+                          children: React.createElement("span", {
+                                className: "hover:border-b-4 hover:border-brand"
+                              }, "Blog")
                         }))));
 }
 
 function MainLayout(Props) {
   var children = Props.children;
-  var minWidth = {
-    minWidth: "20rem"
-  };
   return React.createElement("div", {
-              className: "flex pl-8 pr-8 sm:pl-20 sm:pr-20 justify-center",
-              style: minWidth
+              className: "relative flex pl-8 pr-8 sm:pl-20 sm:pr-20 justify-center"
             }, React.createElement("div", {
-                  className: "w-full md:max-w-192 lg:w-3/4 text-gray-900 font-base"
+                  className: "w-full h-screen md:max-w-192 text-dark font-base"
                 }, React.createElement(MainLayout$Navigation, {}), React.createElement("main", {
-                      className: ""
+                      className: "mt-16 border"
                     }, children)));
 }
 
