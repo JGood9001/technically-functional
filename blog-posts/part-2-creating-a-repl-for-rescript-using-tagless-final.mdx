@@ -14,7 +14,7 @@ let pipe = (g, f, x) => x->g->f
 let compose = (f, g, x) => x->g->f
 ```
 
-Next create a Functor interface, I won't cover the specifics of this implementation here, but if you're interesting in learning more, then check out this blog post which helped me learn [how these can be implemented in OCaml](http://ssomayyajula.github.io/posts/2016-04-23-category-theoretic-abstractions-in-ocaml.html).
+Next create a Functor interface, I won't cover the specifics of this implementation here, but if you're interesting in learning more, then check out this blog post which helped me learn [how these can be implemented in OCaml](https://blog.shaynefletcher.org/2017/05/more-type-classes-in-ocaml.html).
 
 src/interfaces/Functor.res
 ```res
