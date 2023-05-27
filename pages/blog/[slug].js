@@ -42,32 +42,24 @@ const components = {
 // href="https://unpkg.com/prism-themes@1.9.0/themes/prism-z-touch.min.css"
 export default function PostPage({ source, frontMatter }) {
   return (
-    <article className="prose lg:prose-xl md:w-192 article-styles border">
-      <div className="post-header bg-dark">
-        <h1 className="text-brand">{frontMatter.title}</h1>
+    // <article className="prose lg:prose-xl md:w-192 article-styles border">
+    // This is the answer to customizing the styles for this page
+    // https://stackoverflow.com/a/66596556
+    // https://tailwindcss.com/docs/typography-plugin
+    // Even after that... just centering and making the article container's width
+    // larger is proving to be a challenge...
+
+    // https://www.youtube.com/watch?v=GEYkwfYytAM
+    // https://www.youtube.com/watch?v=J0Wy359NJPM
+    <article className="prose max-w-none pb-16">
+      <div>
+        <h1 className="text-5xl">{frontMatter.title}</h1>
         {frontMatter.description && (
           <p className="text-xl text-light-gray">{frontMatter.description}</p>
         )}
       </div>
+    
       <MDXRemote {...source} components={components} />
-      {/* Not sure why, but only width + max-width adjusts the width of article html tag
-         using width alone won't cause the element's width to increase.
-         Also, applying the tailwind classes w-192 w-max-192 had no effect.
-      */}
-      <style jsx>{`
-        .article-styles {
-          margin-top: 4rem;
-          margin-bottom: 4rem;
-        }
-
-        .post-header h1 {
-          margin-bottom: 0;
-        }
-
-        .post-header {
-          margin-bottom: 2rem;
-        }
-      `}</style>
     </article>
   )
 }

@@ -48,7 +48,7 @@ function MainLayout(Props) {
             }, React.createElement("div", {
                   className: "w-full h-screen md:max-w-192 text-dark font-base"
                 }, React.createElement(MainLayout$Navigation, {}), React.createElement("main", {
-                      className: "mt-16 border"
+                      className: "mt-16 max-w-none"
                     }, children)));
 }
 

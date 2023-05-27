@@ -10,6 +10,7 @@ module.exports = {
       safelist: ["html", "body"],
     }
   },
+  // important: true,
   darkMode: false, // or 'media' or 'class'
   theme: {
     extend: {
@@ -36,7 +37,22 @@ module.exports = {
       maxWidth: {
         96: "24rem",
         192: "48rem",
-      }
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            h1: {
+              "margin-top": "7rem",
+              "margin-bottom": "-1rem",
+              "font-size": "2rem",
+            },
+            p: {
+              "display": "inline-block",
+              "font-size": "1.1rem",
+            }
+          },
+        }
+      },
     },
     /* Most of the time we customize the font-sizes,
      so we added the Tailwind default values here for

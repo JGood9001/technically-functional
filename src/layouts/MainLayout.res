@@ -31,7 +31,8 @@ let make = (~children) => {
   <div className="relative flex pl-8 pr-8 sm:pl-20 sm:pr-20 justify-center">
     <div className="w-full h-screen md:max-w-192 text-dark font-base">
       <Navigation />
-      <main className="mt-16 border">
+      // Need max-w-none here for the markdown content to fill 100% of the available space.
+      <main className="mt-16 max-w-none">
         children
       </main>
     </div>

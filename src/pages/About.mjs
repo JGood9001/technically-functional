@@ -4,8 +4,62 @@ import * as React from "react";
 
 function $$default(param) {
   return React.createElement("div", {
-              className: "border mt-24"
-            }, React.createElement("h1", undefined, "About Page"));
+              className: "mt-24"
+            }, React.createElement("p", {
+                  className: "text-md md:text-xl mb-6"
+                }, "A blog where I'll infrequently post about a general concept and some possible applications."), React.createElement("div", {
+                  className: "prose max-w-none mb-6"
+                }, React.createElement("pre", {
+                      className: "language-hs"
+                    }, React.createElement("code", {
+                          className: "language-hs"
+                        }, React.createElement("span", {
+                              className: "token keyword"
+                            }, "my_language_journey "), React.createElement("span", {
+                              className: "token operator"
+                            }, ":: \n"), React.createElement("span", {
+                              className: "token class-name"
+                            }, "JavaScript "), React.createElement("span", {
+                              className: "token operator"
+                            }, "\n-> "), React.createElement("span", {
+                              className: "token class-name"
+                            }, "Elixir "), React.createElement("span", {
+                              className: "token operator"
+                            }, "\n-> "), React.createElement("span", {
+                              className: "token operator"
+                            }, "("), React.createElement("span", {
+                              className: "token class-name"
+                            }, "Julia"), React.createElement("span", {
+                              className: "token operator"
+                            }, ", "), React.createElement("span", {
+                              className: "token class-name"
+                            }, "Crystal"), React.createElement("span", {
+                              className: "token operator"
+                            }, ", "), React.createElement("span", {
+                              className: "token class-name"
+                            }, "Rust"), React.createElement("span", {
+                              className: "token operator"
+                            }, ") "), React.createElement("span", {
+                              className: "token operator"
+                            }, "\n-> "), React.createElement("span", {
+                              className: "token operator"
+                            }, "("), React.createElement("span", {
+                              className: "token class-name"
+                            }, "ReScript"), React.createElement("span", {
+                              className: "token operator"
+                            }, ", "), React.createElement("span", {
+                              className: "token class-name"
+                            }, "PureScript"), React.createElement("span", {
+                              className: "token operator"
+                            }, ", "), React.createElement("span", {
+                              className: "token class-name"
+                            }, "Haskell"), React.createElement("span", {
+                              className: "token operator"
+                            }, ")")))), React.createElement("p", {
+                  className: "text-md md:text-xl"
+                }, "And my personal favorite quote regarding programming:"), React.createElement("div", {
+                  className: "prose"
+                }, React.createElement("blockquote", undefined, "”Life is too short for imperative programming” John Hughes")));
 }
 
 export {
